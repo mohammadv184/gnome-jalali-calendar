@@ -1,0 +1,26 @@
+name: Release GNOME Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: sudo apt-get update && sudo apt-get install -y zip libglib2.0-dev libglib2.0-bin
+
+      - name: Build Extension Zip
+        run: make build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: jalali-calendar@mohammadv184.github.io.zip
+          generate_release_notes: true
+

@@ -1,0 +1,149 @@
+.jalali-clock-display,
+.calendar-month-label,
+.calendar-tile-main,
+.calendar-tile-sub-hijri,
+.calendar-tile-sub-gregorian,
+.day-label,
+.date-label,
+.event-summary,
+.event-time {
+    font-family: Vazirmatn, sans-serif;
+}
+
+.jalali-indicator-label {
+    font-weight: bold;
+    margin: 0 4px;
+}
+
+.jalali-holiday-native .calendar-tile-main,
+.jalali-holiday-native-text {
+    color: #ed333b !important;
+}
+
+.calendar-tile-box {
+    spacing: 0;
+}
+
+.calendar-tile-main {
+    font-size: 1.1em;
+    font-weight: bold;
+    padding-bottom: 2px;
+}
+
+.calendar-tile-subs {
+    font-size: 0.75em;
+}
+
+.calendar-tile-sub-hijri {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: bold;
+}
+
+.calendar-tile-sub-pipe {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.calendar-tile-sub-gregorian {
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: bold;
+}
+
+
+
+.calendar-day {
+    padding: 2px 4px !important;
+}
+
+.calendar-event-line {
+    background-color: rgba(255, 255, 255, 0.4);
+    margin: 0 4px;
+    border-radius: 2px;
+    margin-bottom: 2px;
+}
+
+.jalali-holiday-native-bg {
+    background-color: #ed333b !important;
+}
+
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-Thin.ttf")
+    format("truetype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-ExtraLight.ttf")
+    format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-Light.ttf")
+    format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-Regular.ttf")
+    format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-Medium.ttf")
+    format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-SemiBold.ttf")
+    format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-Bold.ttf")
+    format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-ExtraBold.ttf")
+    format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Vazirmatn;
+  src: url("../../../fonts/jalali-calender-fonts/Vazirmatn-Black.ttf")
+    format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+

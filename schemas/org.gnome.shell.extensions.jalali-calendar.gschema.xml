@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.jalali-calendar" path="/org/gnome/shell/extensions/jalali-calendar/">
+    <key name="show-hijri" type="b">
+      <default>true</default>
+      <summary>Show Hijri date</summary>
+      <description>Show Islamic Hijri dates as secondary.</description>
+    </key>
+    <key name="show-gregorian-sub" type="b">
+      <default>true</default>
+      <summary>Show Gregorian date</summary>
+      <description>Show Gregorian dates as secondary.</description>
+    </key>
+  </schema>
+</schemalist>
