@@ -1,9 +1,9 @@
 {
   "name": "Jalali Calendar",
-  "description": "A comprehensive and elegant Jalali (Persian) calendar for GNOME Shell.",
-  "uuid": "jalali-calendar@mohammadv184.github.io",
+  "description": "A jalali (persian) calendar extension for GNOME Shell.",
+  "uuid": "jalali-calendar@mohammad-abbasi.me",
   "shell-version": ["45", "46", "47", "48", "49","50"],
   "settings-schema": "org.gnome.shell.extensions.jalali-calendar",
   "url": "https://github.com/mohammadv184/gnome-jalali-calendar",
-  "version": 1
+  "version": 0
 }
