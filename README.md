@@ -5,6 +5,8 @@
 A calendar extension for GNOME Shell.
 
 
+![Screenshot](./assets/screenshot.png)
+
 
 ## Installation
 

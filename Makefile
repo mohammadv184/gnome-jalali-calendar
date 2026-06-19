@@ -1,5 +1,5 @@
 UUID = jalali-calendar@mohammadv184.github.io
-FILES = extension.js jalali.js events.js metadata.json prefs.js stylesheet.css schemas assets
+FILES = extension.js jalali.js events.js metadata.json prefs.js stylesheet.css schemas assets/fonts
 ZIP_FILE = $(UUID).zip
 
 .PHONY: all build install clean
