@@ -30,9 +30,9 @@ make install
 
 Copy the repository files manually to the extensions folder:
 ```bash
-mkdir -p ~/.local/share/gnome-shell/extensions/jalali-calendar@mohammadv184.github.io
-cp -r * ~/.local/share/gnome-shell/extensions/jalali-calendar@mohammadv184.github.io/
-glib-compile-schemas ~/.local/share/gnome-shell/extensions/jalali-calendar@mohammadv184.github.io/schemas/
+mkdir -p ~/.local/share/gnome-shell/extensions/jalali-calendar@mohammad-abbasi.me
+cp -r * ~/.local/share/gnome-shell/extensions/jalali-calendar@mohammad-abbasi.me/
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/jalali-calendar@mohammad-abbasi.me/schemas/
 ```
 Then restart GNOME Shell and enable it.
 

@@ -46,7 +46,7 @@ function hijackGNOMECalendar(cal) {
 
         const backButton = new St.Button({ style_class: 'calendar-change-month-back pager-button', icon_name: 'pan-start-symbolic', can_focus: true });
         topBox.add_child(backButton);
-        const backButtonId = backButton.connect('clicked', () => {
+        backButton.connectObject('clicked', () => {
             let j = Jalaali.toJalaali(this._selectedDate || new Date());
             let m = j.jm - 1; let y = j.jy;
             if (m === 0) { m = 12; y--; }
@@ -59,7 +59,7 @@ function hijackGNOMECalendar(cal) {
 
         const forwardButton = new St.Button({ style_class: 'calendar-change-month-forward pager-button', icon_name: 'pan-end-symbolic', can_focus: true });
         topBox.add_child(forwardButton);
-        const forwardButtonId = forwardButton.connect('clicked', () => {
+        forwardButton.connectObject('clicked', () => {
             let j = Jalaali.toJalaali(this._selectedDate || new Date());
             let m = j.jm + 1; let y = j.jy;
             if (m === 13) { m = 1; y++; }
@@ -153,7 +153,7 @@ function hijackGNOMECalendar(cal) {
             _calBtn.set_child(wrapper);
 
             _calBtn._date = new Date(iter);
-            _calBtn.connect('clicked', () => {
+            _calBtn.connectObject('clicked', () => {
                 this._shouldDateGrabFocus = true;
                 this.setDate(_calBtn._date);
                 this._shouldDateGrabFocus = false;
@@ -235,8 +235,6 @@ function restoreGNOMECalendar(cal) {
     if (!cal || !cal._isJalaliHijacked) return;
     cal._isJalaliHijacked = false;
     
-    if (cal._backButtonId && cal._backButton) { cal._backButton.disconnect(cal._backButtonId); }
-    if (cal._forwardButtonId && cal._forwardButton) { cal._forwardButton.disconnect(cal._forwardButtonId); }
     
     if (cal._backButton) { cal._backButton.destroy(); cal._backButton = null; }
     if (cal._forwardButton) { cal._forwardButton.destroy(); cal._forwardButton = null; }
@@ -424,6 +422,8 @@ function updateTopIndicator(clockDisplay) {
     clockDisplay._isUpdatingClock = false;
 }
 
+
+
 function copyDir(fromDir, toDir) {
     let children = fromDir.enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NONE, null);
     if (!toDir.query_exists(null)) {
@@ -476,28 +476,27 @@ export default class JalaliCalendarExtension extends Extension {
             hijackTodayButton(this._dateMenu._date);
         }
 
-        this._settingsChangedId = settings.connect('changed', () => {
+        settings.connectObject('changed', () => {
             if (this._dateMenu._calendar && this._dateMenu._calendar._isJalaliHijacked) {
                 this._dateMenu._calendar._rebuildCalendar();
                 this._dateMenu._calendar._update();
             }
-        });
+        }, this);
 
         if (this._dateMenu._clockDisplay) {
             this._dateMenu._clockDisplay._dateMenu = this._dateMenu;
             this._dateMenu._clockDisplay.add_style_class_name('jalali-clock-display');
-            this._clockTextChangedId = this._dateMenu._clockDisplay.connect('notify::text', () => {
+            this._dateMenu._clockDisplay.connectObject('notify::text', () => {
                 updateTopIndicator(this._dateMenu._clockDisplay);
-            });
+            }, this);
             // trigger it once initially
             updateTopIndicator(this._dateMenu._clockDisplay);
         }
     }
 
     disable() {
-        if (settings && this._settingsChangedId) {
-            settings.disconnect(this._settingsChangedId);
-            this._settingsChangedId = null;
+        if (settings) {
+            settings.disconnectObject(this);
         }
 
         if (this._dateMenu && this._dateMenu._calendar) {
@@ -512,10 +511,9 @@ export default class JalaliCalendarExtension extends Extension {
             restoreTodayButton(this._dateMenu._date);
         }
 
-        if (this._dateMenu && this._dateMenu._clockDisplay && this._clockTextChangedId) {
+        if (this._dateMenu && this._dateMenu._clockDisplay) {
             this._dateMenu._clockDisplay.remove_style_class_name('jalali-clock-display');
-            this._dateMenu._clockDisplay.disconnect(this._clockTextChangedId);
-            this._clockTextChangedId = null;
+            this._dateMenu._clockDisplay.disconnectObject(this);
             // Restore original text
             if (this._dateMenu._clock) {
                 this._dateMenu._clockDisplay.text = this._dateMenu._clock.clock;
@@ -545,7 +543,6 @@ export default class JalaliCalendarExtension extends Extension {
             deleteDir(dir);
         }
     }
-
     
 }
 
