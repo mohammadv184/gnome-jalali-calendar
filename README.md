@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://extensions.gnome.org/extension/XXXX/jalali-calendar/"><img src="https://img.shields.io/badge/GNOME%20Shell-Extension-blue.svg?style=flat-square" alt="GNOME Shell Extension"></a>
+  <a href="https://extensions.gnome.org/extension/10252/jalali-calendar/"><img src="https://img.shields.io/badge/GNOME%20Shell-Extension-blue.svg?style=flat-square" alt="GNOME Shell Extension"></a>
   <a href="https://github.com/mohammadv184/gnome-jalali-calendar/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mohammadv184/gnome-jalali-calendar?style=flat-square" alt="License"></a>
 </p>
 
