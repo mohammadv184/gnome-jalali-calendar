@@ -11,5 +11,58 @@
       <summary>Show Gregorian date</summary>
       <description>Show Gregorian dates as secondary.</description>
     </key>
+
+    <key name="custom-font" type="s">
+      <default>'Vazirmatn'</default>
+      <summary>Custom Font</summary>
+      <description>Font family for the calendar</description>
+    </key>
+    
+    <key name="enable-custom-color-today" type="b">
+      <default>false</default>
+      <summary>Enable Custom Today Color</summary>
+      <description>Use custom today color</description>
+    </key>
+    <key name="color-today" type="s">
+      <default>'#3584e4'</default>
+      <summary>Today Color</summary>
+      <description>Color for the current day</description>
+    </key>
+    <key name="enable-custom-color-day" type="b">
+      <default>false</default>
+      <summary>Enable custom color for normal days</summary>
+      <description>If true, normal working days will be displayed in the custom color.</description>
+    </key>
+    <key name="color-day" type="s">
+      <default>'#ffffff'</default>
+      <summary>Normal day color</summary>
+      <description>Hex color code for normal working days.</description>
+    </key>
+    <key name="enable-custom-color-holiday" type="b">
+      <default>true</default>
+      <summary>Enable Custom Holiday Color</summary>
+      <description>Use custom holiday color</description>
+    </key>
+    <key name="color-holiday" type="s">
+      <default>'#ed333b'</default>
+      <summary>Holiday Color</summary>
+      <description>Color for holidays</description>
+    </key>
+    
+    <key name="show-events-iranian" type="b">
+      <default>true</default>
+      <summary>Iranian Events</summary>
+      <description>Show Iranian events</description>
+    </key>
+    <key name="show-events-hijri" type="b">
+      <default>true</default>
+      <summary>Islamic Events</summary>
+      <description>Show Islamic events</description>
+    </key>
+    <key name="show-events-gregorian" type="b">
+      <default>true</default>
+      <summary>Gregorian Events</summary>
+      <description>Show Gregorian events</description>
+    </key>
   </schema>
 </schemalist>

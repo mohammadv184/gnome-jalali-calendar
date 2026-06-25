@@ -39,7 +39,24 @@ function hijackGNOMECalendar(cal) {
 
     cal._buildHeader = function() {
         const layout = this.layout_manager;
-        this.destroy_all_children();
+        
+        // Scrub GNOME Shell's internal arrays to prevent "disposed object" crashes
+        const currentChildren = this.get_children();
+        for (let key of Object.keys(this)) {
+            if (Array.isArray(this[key]) && this[key].length > 0) {
+                let hasOldChild = this[key].some(item => 
+                    currentChildren.includes(item) || (item && typeof item === 'object' && currentChildren.includes(item.button))
+                );
+                if (hasOldChild) {
+                    this[key] = [];
+                }
+            }
+        }
+        this['_buttons'] = [];
+        if (this._dates) this._dates = [];
+
+        // Safely unparent children before destroying to prevent lingering C++ references
+        currentChildren.forEach(child => this.remove_child(child));
 
         const topBox = new St.BoxLayout({style_class: 'calendar-month-header'});
         layout.attach(topBox, 0, 0, 7, 1);
@@ -54,7 +71,14 @@ function hijackGNOMECalendar(cal) {
             this.setDate(new Date(g.gy, g.gm - 1, g.gd));
         });
 
-        this['_monthLabel'] = new St.Label({ style_class: 'calendar-month-label', can_focus: true, x_align: Clutter.ActorAlign.CENTER, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+        const customFont = settings ? settings.get_string('custom-font') : 'Vazirmatn';
+        let fontStr = customFont ? `${customFont}, ` : '';
+        let styleStr = `font-family: ${fontStr}Vazirmatn, sans-serif;`;
+
+        this['_monthLabel'] = new St.Label({ style_class: 'calendar-month-label', can_focus: true, x_align: Clutter.ActorAlign.FILL, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+        this['_monthLabel'].clutter_text.ellipsize = 3; // Pango.EllipsizeMode.END
+        this['_monthLabel'].clutter_text.line_alignment = 1; // Pango.Alignment.CENTER
+        this['_monthLabel'].set_style(styleStr + "font-size: 0.85em; font-stretch: condensed; font-weight: normal; padding: 0; margin: 0;");
         topBox.add_child(this['_monthLabel']);
 
         const forwardButton = new St.Button({ style_class: 'calendar-change-month-forward pager-button', icon_name: 'pan-end-symbolic', can_focus: true });
@@ -70,7 +94,8 @@ function hijackGNOMECalendar(cal) {
         const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
         for (let i = 0; i < 7; i++) {
             const label = new St.Label({ style_class: 'calendar-day-heading', text: weekDays[i], can_focus: true });
-            layout.attach(label, i, 1, 1, 1);
+            label.set_style(styleStr);
+            layout.attach(label, 6 - i, 1, 1, 1);
         }
 
         this._firstDayIndex = this.get_n_children();
@@ -79,11 +104,13 @@ function hijackGNOMECalendar(cal) {
     cal._rebuildCalendar = function() {
         const now = new Date();
         const children = this.get_children();
+        
         for (let i = this._firstDayIndex; i < children.length; i++) {
-            children[i].destroy();
+            this.remove_child(children[i]);
         }
 
         this['_buttons'] = [];
+        if (this._dates) this._dates = [];
         
         let targetDate = this._selectedDate || now;
         let targetJ = Jalaali.toJalaali(targetDate);
@@ -104,6 +131,20 @@ function hijackGNOMECalendar(cal) {
         let row = 2;
         let col = firstDayOfWeek;
 
+        const customFont = settings.get_string('custom-font') || 'Vazirmatn';
+        const colorToday = settings.get_string('color-today') || '#3584e4';
+        const colorHoliday = settings.get_string('color-holiday') || '#ed333b';
+        const colorDay = settings.get_string('color-day') || '#ffffff';
+        
+        const enableCustomColorToday = settings.get_boolean('enable-custom-color-today');
+        const enableCustomColorHoliday = settings.get_boolean('enable-custom-color-holiday');
+        const enableCustomColorDay = settings.get_boolean('enable-custom-color-day');
+        const eventOptions = {
+            iranian: settings.get_boolean('show-events-iranian'),
+            hijri: settings.get_boolean('show-events-hijri'),
+            gregorian: settings.get_boolean('show-events-gregorian')
+        };
+
         for (let day = 1; day <= monthLength; day++) {
             const gDate = Jalaali.toGregorian(targetJ.jy, targetJ.jm, day);
             const iter = new Date(gDate.gy, gDate.gm - 1, gDate.gd);
@@ -115,22 +156,32 @@ function hijackGNOMECalendar(cal) {
             });
 
             // Create tile content
-            const wrapper = new St.BoxLayout({ vertical: true, x_align: Clutter.ActorAlign.FILL, y_align: Clutter.ActorAlign.FILL });
+            const wrapper = new St.BoxLayout({ vertical: true, x_align: Clutter.ActorAlign.FILL, y_align: Clutter.ActorAlign.CENTER, y_expand: true });
 
-            const tileBox = new St.BoxLayout({ vertical: true, x_align: Clutter.ActorAlign.FILL, y_align: Clutter.ActorAlign.CENTER, y_expand: true, style_class: 'calendar-tile-box' });
+            const tileBox = new St.BoxLayout({ vertical: true, x_align: Clutter.ActorAlign.FILL, style_class: 'calendar-tile-box' });
             
             const mainLabel = new St.Label({
                 text: Jalaali.toPersianDigits(day),
                 style_class: 'calendar-tile-main',
                 x_align: Clutter.ActorAlign.CENTER
             });
+            let fontStr = customFont ? `${customFont}, ` : '';
+            let styleStr = `font-family: ${fontStr}Vazirmatn, sans-serif;`;
+            mainLabel.set_style(styleStr);
             tileBox.add_child(mainLabel);
 
             const subsBox = new St.BoxLayout({ style_class: 'calendar-tile-subs', x_expand: true });
             
+            const subStyleStr = `${styleStr} color: #d3d3d3;`;
+            
             const hijriLabel = new St.Label({ text: '', style_class: 'calendar-tile-sub-hijri', x_align: Clutter.ActorAlign.START, x_expand: true });
-            const pipeLabel = new St.Label({ text: '|', style_class: 'calendar-tile-sub-pipe', x_align: Clutter.ActorAlign.CENTER, x_expand: true });
+            hijriLabel.set_style(subStyleStr);
+            
+            const pipeLabel = new St.Label({ text: ' | ', style_class: 'calendar-tile-sub-pipe', x_align: Clutter.ActorAlign.CENTER, x_expand: true });
+            pipeLabel.set_style(subStyleStr);
+            
             const gregLabel = new St.Label({ text: '', style_class: 'calendar-tile-sub-gregorian', x_align: Clutter.ActorAlign.END, x_expand: true });
+            gregLabel.set_style(subStyleStr);
             
             let hasHijri = settings.get_boolean('show-hijri');
             let hasGreg = settings.get_boolean('show-gregorian-sub');
@@ -144,10 +195,9 @@ function hijackGNOMECalendar(cal) {
             subsBox.add_child(gregLabel);
             
             tileBox.add_child(subsBox);
-            
             wrapper.add_child(tileBox);
 
-            const eventLine = new St.Widget({ height: 2, style_class: 'calendar-event-line', x_expand: true });
+            const eventLine = new St.Widget({ height: 2, width: 18, style_class: 'calendar-event-line', x_expand: false, x_align: Clutter.ActorAlign.CENTER });
             wrapper.add_child(eventLine);
 
             _calBtn.set_child(wrapper);
@@ -164,14 +214,19 @@ function hijackGNOMECalendar(cal) {
             else styleClass += ' calendar-weekday';
 
             if (row === 2) styleClass = `calendar-day-top ${styleClass}`;
-            if (col === 0) styleClass = `calendar-day-left ${styleClass}`;
+            if (6 - col === 0) styleClass = `calendar-day-left ${styleClass}`;
 
-            if (iter.getFullYear() === now.getFullYear() && iter.getMonth() === now.getMonth() && iter.getDate() === now.getDate()) {
+            const isToday = iter.getFullYear() === now.getFullYear() && iter.getMonth() === now.getMonth() && iter.getDate() === now.getDate();
+            if (isToday) {
                 styleClass += ' calendar-today';
             }
 
-            const events = Events.getEventsForDate(iter);
-            const isHoliday = events.some(e => e.isHoliday) || col === 6;
+            const events = Events.getEventsForDate(iter, eventOptions, { 
+                j: { jy: targetJ.jy, jm: targetJ.jm, jd: day }, 
+                h: hDate 
+            });
+            const isWeekend = col === 6;
+            const isHoliday = events.some(e => e.isHoliday) || isWeekend;
 
             if (events.length > 0 || isHoliday) {
                 eventLine.opacity = 255;
@@ -179,15 +234,24 @@ function hijackGNOMECalendar(cal) {
                 eventLine.opacity = 0;
             }
             
-            if (isHoliday) {
-                _calBtn.add_style_class_name('jalali-holiday-native');
-                mainLabel.add_style_class_name('jalali-holiday-native-text');
-                eventLine.add_style_class_name('jalali-holiday-native-bg');
+            if (isToday && enableCustomColorToday) {
+                _calBtn.set_style(`background-color: ${colorToday}; border-radius: 999px;`);
+                mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: white;`);
+                hijriLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
+                pipeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
+                gregLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
+            } else {
+                if (isHoliday && enableCustomColorHoliday) {
+                    eventLine.set_style(`background-color: ${colorHoliday};`);
+                    mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: ${colorHoliday};`);
+                } else if (enableCustomColorDay) {
+                    mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: ${colorDay};`);
+                }
             }
 
             _calBtn.style_class = styleClass;
 
-            layout.attach(_calBtn, col, row, 1, 1);
+            layout.attach(_calBtn, 6 - col, row, 1, 1);
             this['_buttons'].push(_calBtn);
 
             col++;
@@ -206,7 +270,12 @@ function hijackGNOMECalendar(cal) {
         const now = new Date();
         const targetDate = this._selectedDate || now;
         
+        const customFont = settings ? settings.get_string('custom-font') : 'Vazirmatn';
+        let fontStr = customFont ? `${customFont}, ` : '';
+        let styleStr = `font-family: ${fontStr}Vazirmatn, sans-serif;`;
+        
         this._monthLabel.text = formatMonthTitle(targetDate);
+        this._monthLabel.set_style(styleStr + "font-size: 0.85em; font-stretch: condensed; font-weight: normal; padding: 0; margin: 0;");
 
         let targetJ = Jalaali.toJalaali(targetDate);
         if (!this._builtMonth || this._builtMonth !== targetJ.jm || this._builtYear !== targetJ.jy || !this._markedAsToday || this._markedAsToday.getDate() !== now.getDate()) {
@@ -223,6 +292,21 @@ function hijackGNOMECalendar(cal) {
             } else {
                 button.remove_style_pseudo_class('selected');
             }
+            
+            const eventOptions = {
+                iranian: settings ? settings.get_boolean('show-events-iranian') : true,
+                hijri: settings ? settings.get_boolean('show-events-hijri') : true,
+                gregorian: settings ? settings.get_boolean('show-events-gregorian') : true
+            };
+            const myHolidays = Events.getEventsForDate(button._date, eventOptions);
+            const hasJalaliEvents = myHolidays && myHolidays.length > 0;
+            const hasGregorianEvents = this._eventSource && typeof this._eventSource.hasEvents === 'function' && this._eventSource.hasEvents(button._date);
+            
+            if (hasJalaliEvents || hasGregorianEvents) {
+                button.add_style_class_name('has-events');
+            } else {
+                button.remove_style_class_name('has-events');
+            }
         });
     };
 
@@ -234,7 +318,6 @@ function hijackGNOMECalendar(cal) {
 function restoreGNOMECalendar(cal) {
     if (!cal || !cal._isJalaliHijacked) return;
     cal._isJalaliHijacked = false;
-    
     
     if (cal._backButton) { cal._backButton.destroy(); cal._backButton = null; }
     if (cal._forwardButton) { cal._forwardButton.destroy(); cal._forwardButton = null; }
@@ -256,57 +339,285 @@ function hijackEventsSection(eventsItem) {
     eventsItem._isJalaliHijacked = true;
 
     eventsItem._originalReloadEvents = eventsItem._reloadEvents;
-    eventsItem._reloadEvents = function() {
-        this._originalReloadEvents();
+    eventsItem._originalSetDate = eventsItem.setDate;
+    eventsItem._originalUpdateTitle = eventsItem._updateTitle;
+
+    eventsItem._updateTitle = function() {
+        if (this._originalUpdateTitle) {
+            this._originalUpdateTitle();
+        }
         
-        if (!this._startDate || !this._eventsList) return;
-        
-        try {
-            const myHolidays = Events.getEventsForDate(this._startDate);
-            if (myHolidays.length === 0) return;
+        if (this._title && this._startDate) {
+            const date = this._startDate;
+            const j = Jalaali.toJalaali(date);
+            const rle = '\u202B';
+            const pdf = '\u202C';
+            const pDate = `${rle}${Jalaali.toPersianDigits(j.jd)} ${Jalaali.JALALI_MONTH_NAMES[j.jm - 1]}${pdf}`;
+            const lrm = '\u200E';
             
-            const children = this._eventsList.get_children();
-            if (children.length === 1 && children[0].style_class && children[0].style_class.includes('event-placeholder')) {
-                children[0].destroy();
+            let newText = '';
+            if (settings && settings.get_boolean('show-gregorian-sub')) {
+                const gDate = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
+                newText = `${lrm}${gDate} ${lrm}|${lrm} ${pDate}`;
+            } else {
+                newText = pDate;
             }
             
-            for (let i = myHolidays.length - 1; i >= 0; i--) {
-                const h = myHolidays[i];
-                const box = new St.BoxLayout({
-                    style_class: 'event-box',
-                    orientation: Clutter.Orientation.VERTICAL,
-                });
-                const titleLabel = new St.Label({
-                    text: h.title,
-                    style_class: 'event-summary',
-                });
-                if (h.isHoliday) {
-                    titleLabel.add_style_class_name('jalali-holiday-native-text');
-                }
-                box.add_child(titleLabel);
-                
-                const timeLabel = new St.Label({
-                    text: h.isHoliday ? "تعطیل رسمی" : "مناسبت",
-                    style_class: 'event-time',
-                });
-                if (h.isHoliday) {
-                    timeLabel.add_style_class_name('jalali-holiday-native-text');
-                }
-                box.add_child(timeLabel);
-                
-                this._eventsList.insert_child_at_index(box, 0);
+            if (settings && settings.get_boolean('show-hijri')) {
+                const hDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab', {
+                    day: 'numeric', month: 'long'
+                }).format(date);
+                newText += ` ${lrm}|${lrm} ${rle}${hDate}${pdf}`;
             }
-        } catch(e) {
-            console.error("JalaliCalendar: Error injecting events", e);
+            
+            const customFont = settings ? settings.get_string('custom-font') : 'Vazirmatn';
+            let fontStr = customFont ? `"${customFont}", ` : '';
+            this._title.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; font-weight: bold;`);
+            
+            this._title.set_text_direction(Clutter.TextDirection.LTR);
+            this._title.set_text(newText);
+            this._title.x_align = Clutter.ActorAlign.CENTER;
         }
     };
+
+    eventsItem.setDate = function(date) {
+        this._originalSetDate(date);
+        this._updateTitle();
+    };
+
+    if (eventsItem._eventsList && !eventsItem._eventsList._originalAddChild) {
+        eventsItem._eventsList._originalAddChild = eventsItem._eventsList.add_child;
+        eventsItem._eventsList.add_child = function(child) {
+            if (child.has_style_class_name && child.has_style_class_name('event-placeholder') && eventsItem._startDate) {
+                const eventOptions = {
+                    iranian: settings.get_boolean('show-events-iranian'),
+                    hijri: settings.get_boolean('show-events-hijri'),
+                    gregorian: settings.get_boolean('show-events-gregorian')
+                };
+                const myHolidays = Events.getEventsForDate(eventsItem._startDate, eventOptions);
+                if (myHolidays && myHolidays.length > 0) {
+                    return; // Block the placeholder!
+                }
+            }
+            
+            if (child.event && child.event.summary) {
+                if (/^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(child.event.summary)) {
+                    child.set_text_direction(Clutter.TextDirection.RTL);
+                }
+            }
+            
+            this._originalAddChild(child);
+        };
+    }
+
+    eventsItem._originalReloadEvents = eventsItem._reloadEvents;
+    eventsItem._reloadEvents = function() {
+        let result;
+        try {
+            if (this._originalReloadEvents) result = this._originalReloadEvents();
+        } catch (e) {
+            console.error("JalaliCalendar: Error in original _reloadEvents", e);
+        }
+        
+        if (result && typeof result.then === 'function') {
+            result.then(() => {
+                if (this._isJalaliHijacked) injectHolidays(this);
+            }).catch(e => {
+                console.error("JalaliCalendar: Promise error in _reloadEvents", e);
+                if (this._isJalaliHijacked) injectHolidays(this);
+            });
+        } else {
+            if (this._isJalaliHijacked) injectHolidays(this);
+        }
+        return result;
+    };
+
+    if (eventsItem.reloadEvents) {
+        eventsItem._originalPublicReloadEvents = eventsItem.reloadEvents;
+        eventsItem.reloadEvents = function() {
+            let result;
+            try {
+                result = this._originalPublicReloadEvents();
+            } catch (e) {
+                console.error("JalaliCalendar: Error in original reloadEvents", e);
+            }
+            
+            if (result && typeof result.then === 'function') {
+                result.then(() => {
+                    if (this._isJalaliHijacked) injectHolidays(this);
+                }).catch(e => {
+                    if (this._isJalaliHijacked) injectHolidays(this);
+                });
+            } else {
+                if (this._isJalaliHijacked) injectHolidays(this);
+            }
+            return result;
+        };
+    }
+
+    if (eventsItem.updateEvents) {
+        eventsItem._originalPublicUpdateEvents = eventsItem.updateEvents;
+        eventsItem.updateEvents = function() {
+            let result;
+            try {
+                result = this._originalPublicUpdateEvents();
+            } catch (e) {
+                console.error("JalaliCalendar: Error in original updateEvents", e);
+            }
+            
+            if (result && typeof result.then === 'function') {
+                result.then(() => {
+                    if (this._isJalaliHijacked) injectHolidays(this);
+                }).catch(e => {
+                    if (this._isJalaliHijacked) injectHolidays(this);
+                });
+            } else {
+                if (this._isJalaliHijacked) injectHolidays(this);
+            }
+            return result;
+        };
+    }
+
+    if (eventsItem._sync) {
+        eventsItem._originalSync = eventsItem._sync;
+        eventsItem._sync = function() {
+            if (this._originalSync) this._originalSync();
+            if (this._isJalaliHijacked) injectHolidays(this);
+        };
+    }
+
+    if (eventsItem.sync) {
+        eventsItem._originalPublicSync = eventsItem.sync;
+        eventsItem.sync = function() {
+            if (this._originalPublicSync) this._originalPublicSync();
+            if (this._isJalaliHijacked) injectHolidays(this);
+        };
+    }
+}
+
+function injectHolidays(eventsItem) {
+    if (!eventsItem || !eventsItem._startDate || !eventsItem._eventsList) return;
+    
+    try {
+        const rtlRegex = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+        
+        const children = eventsItem._eventsList.get_children();
+        
+        // Remove existing injected holidays
+        children.forEach(child => {
+            if (child.has_style_class_name('jalali-event-box')) {
+                child.destroy();
+            }
+        });
+        
+        const eventOptions = {
+            iranian: settings.get_boolean('show-events-iranian'),
+            hijri: settings.get_boolean('show-events-hijri'),
+            gregorian: settings.get_boolean('show-events-gregorian')
+        };
+        
+        const myHolidays = Events.getEventsForDate(eventsItem._startDate, eventOptions);
+        if (myHolidays.length === 0) return;
+        
+        // Remove the placeholder if there are holidays
+        eventsItem._eventsList.get_children().forEach(child => {
+            if (child.has_style_class_name && child.has_style_class_name('event-placeholder')) {
+                eventsItem._eventsList.remove_child(child);
+            }
+        });
+        
+        const enableCustomColorHoliday = settings.get_boolean('enable-custom-color-holiday');
+        const enableCustomColorDay = settings.get_boolean('enable-custom-color-day');
+        const colorHoliday = settings.get_string('color-holiday') || '#ed333b';
+        const colorDay = settings.get_string('color-day') || '#ffffff';
+        const customFont = settings.get_string('custom-font') || 'Vazirmatn';
+        let fontStr = customFont ? `"${customFont}", ` : '';
+        
+        for (let i = myHolidays.length - 1; i >= 0; i--) {
+            const h = myHolidays[i];
+            const box = new St.BoxLayout({
+                style_class: 'jalali-event-box',
+                orientation: Clutter.Orientation.VERTICAL,
+                x_expand: true,
+            });
+            
+            let useColor = false;
+            let eventColor = '';
+            if (enableCustomColorHoliday && h.isHoliday) {
+                useColor = true;
+                eventColor = colorHoliday;
+            } else if (enableCustomColorDay && !h.isHoliday) {
+                useColor = true;
+                eventColor = colorDay;
+            }
+            
+            const isRTL = rtlRegex.test(h.title);
+            const textDir = isRTL ? Clutter.TextDirection.RTL : Clutter.TextDirection.LTR;
+            const alignDir = isRTL ? Clutter.ActorAlign.END : Clutter.ActorAlign.START;
+            
+            box.set_text_direction(textDir);
+
+            const titleLabel = new St.Label({
+                text: h.title,
+                style_class: 'event-title',
+                x_expand: true,
+                x_align: alignDir
+            });
+            titleLabel.set_text_direction(textDir);
+            let titleStyle = `font-family: ${fontStr}Vazirmatn, sans-serif; font-weight: bold;`;
+            if (useColor) {
+                titleStyle += ` color: ${eventColor};`;
+            }
+            titleLabel.set_style(titleStyle);
+            box.add_child(titleLabel);
+            
+            const timeLabel = new St.Label({
+                text: h.isHoliday ? "تعطیل رسمی" : "مناسبت",
+                style_class: 'event-time',
+                x_expand: true,
+                x_align: alignDir
+            });
+            timeLabel.set_text_direction(textDir);
+            timeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif;`);
+                timeLabel.add_style_class_name('dim-label');
+            box.add_child(timeLabel);
+            
+            eventsItem._eventsList.insert_child_at_index(box, 0);
+        }
+        
+        if (eventsItem._eventsList) {
+            eventsItem._eventsList.visible = true;
+            if (typeof eventsItem._eventsList.show === 'function') eventsItem._eventsList.show();
+            if (typeof eventsItem._eventsList.queue_relayout === 'function') eventsItem._eventsList.queue_relayout();
+        }
+        if (eventsItem) {
+            eventsItem.visible = true;
+            if (typeof eventsItem.show === 'function') eventsItem.show();
+            if (typeof eventsItem.queue_relayout === 'function') eventsItem.queue_relayout();
+        }
+    } catch(e) {
+        console.error("JalaliCalendar: Error injecting holidays", e);
+    }
 }
 
 function restoreEventsSection(eventsItem) {
     if (!eventsItem || !eventsItem._isJalaliHijacked) return;
     eventsItem._isJalaliHijacked = false;
     
+    if (eventsItem._eventsList && eventsItem._eventsList._originalAddChild) {
+        eventsItem._eventsList.add_child = eventsItem._eventsList._originalAddChild;
+        eventsItem._eventsList._originalAddChild = null;
+    }
+    
     eventsItem._reloadEvents = eventsItem._originalReloadEvents;
+    
+    if (eventsItem._originalSetDate) {
+        eventsItem.setDate = eventsItem._originalSetDate;
+    }
+    
+    if (eventsItem._originalUpdateTitle) {
+        eventsItem._updateTitle = eventsItem._originalUpdateTitle;
+    }
 }
 
 function hijackTodayButton(todayButton) {
@@ -353,12 +664,24 @@ function hijackTodayButton(todayButton) {
     todayButton.setDate = function(date) {
         this._originalSetDate(date);
         
+        const customFont = settings ? settings.get_string('custom-font') : 'Vazirmatn';
+        let fontStr = customFont ? `${customFont}, ` : '';
+        let styleStr = `font-family: ${fontStr}Vazirmatn, sans-serif;`;
+        
         const j = Jalaali.toJalaali(date);
         const pName = `${Jalaali.JALALI_WEEK_DAYS[(date.getDay() + 1) % 7]}`;
         const pDate = `${Jalaali.toPersianDigits(j.jd)} ${Jalaali.JALALI_MONTH_NAMES[j.jm - 1]} ${Jalaali.toPersianDigits(j.jy)}`;
         
-        if (this._dayJalali) this._dayJalali.set_text(pName);
-        if (this._dateJalali) this._dateJalali.set_text(pDate);
+        if (this._dayJalali) {
+            this._dayJalali.set_text(pName);
+            this._dayJalali.set_style(styleStr);
+        }
+        if (this._dateJalali) {
+            this._dateJalali.set_text(pDate);
+            this._dateJalali.set_style(styleStr);
+        }
+        if (this._dayPipe) this._dayPipe.set_style(`margin: 0 10px; ${styleStr}`);
+        if (this._datePipe) this._datePipe.set_style(`margin: 0 10px; ${styleStr}`);
     };
     
     todayButton.setDate(new Date());
@@ -412,12 +735,14 @@ function updateTopIndicator(clockDisplay) {
 
     if (separator) {
         let parts = originalText.split(separator);
-        // parts[0] is usually the date, parts[1] is the time
         clockDisplay.text = `${LTR}${parts[0]}${LTR} | ${RTL}${pStr}${RTL}${separator}${LTR}${parts.slice(1).join(separator)}${LTR}`;
     } else {
-        // Fallback: Just put it before the time
         clockDisplay.text = `${RTL}${pStr}${RTL} | ${LTR}${originalText}${LTR}`;
     }
+
+    const customFont = settings ? settings.get_string('custom-font') : 'Vazirmatn';
+    let fontStr = customFont ? `${customFont}, ` : '';
+    clockDisplay.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif;`);
 
     clockDisplay._isUpdatingClock = false;
 }
@@ -476,13 +801,6 @@ export default class JalaliCalendarExtension extends Extension {
             hijackTodayButton(this._dateMenu._date);
         }
 
-        settings.connectObject('changed', () => {
-            if (this._dateMenu._calendar && this._dateMenu._calendar._isJalaliHijacked) {
-                this._dateMenu._calendar._rebuildCalendar();
-                this._dateMenu._calendar._update();
-            }
-        }, this);
-
         if (this._dateMenu._clockDisplay) {
             this._dateMenu._clockDisplay._dateMenu = this._dateMenu;
             this._dateMenu._clockDisplay.add_style_class_name('jalali-clock-display');
@@ -492,6 +810,23 @@ export default class JalaliCalendarExtension extends Extension {
             // trigger it once initially
             updateTopIndicator(this._dateMenu._clockDisplay);
         }
+
+        settings.connectObject('changed', () => {
+            if (this._dateMenu._calendar && this._dateMenu._calendar._isJalaliHijacked) {
+                this._dateMenu._calendar._buildHeader();
+                this._dateMenu._calendar._rebuildCalendar();
+                this._dateMenu._calendar._update();
+            }
+            if (this._dateMenu._date && this._dateMenu._date._isJalaliHijacked) {
+                this._dateMenu._date.setDate(new Date());
+            }
+            if (this._dateMenu._clockDisplay) {
+                updateTopIndicator(this._dateMenu._clockDisplay);
+            }
+            if (this._dateMenu._eventsItem && this._dateMenu._eventsItem._isJalaliHijacked) {
+                this._dateMenu._eventsItem._reloadEvents();
+            }
+        }, this);
     }
 
     disable() {

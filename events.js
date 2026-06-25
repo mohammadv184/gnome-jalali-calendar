@@ -262,17 +262,28 @@ const GREGORIAN_EVENTS = {
     '12-30':[createEvent('روز جهانی همبستگی انسانی', false)],
 };
 
-export function getEventsForDate(date) {
-    const j = Jalaali.toJalaali(date);
-    const h = Jalaali.toHijri(date);
+export function getEventsForDate(date, options = { iranian: true, hijri: true, gregorian: true }, precalculated = null) {
+    const j = precalculated && precalculated.j ? precalculated.j : Jalaali.toJalaali(date);
+    const h = precalculated && precalculated.h ? precalculated.h : Jalaali.toHijri(date);
     const gDay = date.getDate();
     const gMonth = date.getMonth() + 1;
 
-    const events = [];
+    let events = [];
 
-    const sEvents = IRANIAN_EVENTS[`${j.jm}-${j.jd}`] || [];
-    const lEvents = HIJRI_EVENTS[`${h.jm}-${h.jd}`] || [];
-    const grEvents = GREGORIAN_EVENTS[`${gMonth}-${gDay}`] || [];
+    if (options.iranian) {
+        const sEvents = IRANIAN_EVENTS[`${j.jm}-${j.jd}`] || [];
+        events.push(...sEvents);
+    }
+    
+    if (options.hijri) {
+        const lEvents = HIJRI_EVENTS[`${h.jm}-${h.jd}`] || [];
+        events.push(...lEvents);
+    }
+    
+    if (options.gregorian) {
+        const grEvents = GREGORIAN_EVENTS[`${gMonth}-${gDay}`] || [];
+        events.push(...grEvents);
+    }
 
-    return [...sEvents, ...lEvents, ...grEvents];
+    return events;
 }

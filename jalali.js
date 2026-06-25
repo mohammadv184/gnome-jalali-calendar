@@ -140,29 +140,31 @@ export function toArabicDigits(str) {
 /**
  * Get Hijri (Islamic) date objects.
  */
+const hijriFormatter = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura-nu-latn', {
+    day: 'numeric', month: 'numeric', year: 'numeric'
+});
+
 export function toHijri(date) {
-    // Normalize to noon local time to avoid timezone edge cases
-    let localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
-    // Convert to Julian Day
-    let jd = Math.floor(localDate.getTime() / 86400000) + 2440588;
+    const parts = hijriFormatter.formatToParts(date);
     
-    // Kuwaiti algorithm for Islamic calendar
-    let l = jd - 1948440 + 10632;
-    let n = Math.floor((l - 1) / 10631);
-    l = l - 10631 * n + 354;
-    let j = (Math.floor((10985 - l) / 5316)) * (Math.floor((50 * l) / 17719)) + (Math.floor(l / 5670)) * (Math.floor((43 * l) / 15238));
-    l = l - (Math.floor((30 - j) / 15)) * (Math.floor((17719 * j) / 50)) - (Math.floor(j / 16)) * (Math.floor((15238 * j) / 43)) + 29;
-    let m = Math.floor((24 * l) / 709);
-    let d = l - Math.floor((709 * m) / 24);
-    let y = 30 * n + j - 30;
+    let d = 1, m = 1, y = 1;
+    for (const part of parts) {
+        if (part.type === 'day') d = parseInt(part.value, 10);
+        if (part.type === 'month') m = parseInt(part.value, 10);
+        if (part.type === 'year') y = parseInt(part.value.split(' ')[0], 10);
+    }
     
     return { jy: y, jm: m, jd: d };
 }
 
+const hijriStringFormatters = {};
 export function getHijriDate(date, locale = 'fa-IR') {
-    return new Intl.DateTimeFormat(locale + '-u-ca-islamic-uma-nu-latn', {
-        day: 'numeric', month: 'long', year: 'numeric'
-    }).format(date);
+    if (!hijriStringFormatters[locale]) {
+        hijriStringFormatters[locale] = new Intl.DateTimeFormat(locale + '-u-ca-islamic-umalqura-nu-latn', {
+            day: 'numeric', month: 'long', year: 'numeric'
+        });
+    }
+    return hijriStringFormatters[locale].format(date);
 }
 
 export function getGregorianDate(date, locale = 'en-US') {

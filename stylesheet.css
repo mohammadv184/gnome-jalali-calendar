@@ -1,23 +1,6 @@
-.jalali-clock-display,
-.calendar-month-label,
-.calendar-tile-main,
-.calendar-tile-sub-hijri,
-.calendar-tile-sub-gregorian,
-.day-label,
-.date-label,
-.event-summary,
-.event-time {
-    font-family: Vazirmatn, sans-serif;
-}
-
 .jalali-indicator-label {
     font-weight: bold;
     margin: 0 4px;
-}
-
-.jalali-holiday-native .calendar-tile-main,
-.jalali-holiday-native-text {
-    color: #ed333b !important;
 }
 
 .calendar-tile-box {
@@ -27,7 +10,6 @@
 .calendar-tile-main {
     font-size: 1.1em;
     font-weight: bold;
-    padding-bottom: 2px;
 }
 
 .calendar-tile-subs {
@@ -35,32 +17,23 @@
 }
 
 .calendar-tile-sub-hijri {
-    color: rgba(255, 255, 255, 0.85);
     font-weight: bold;
-}
-
-.calendar-tile-sub-pipe {
-    color: rgba(255, 255, 255, 0.4);
 }
 
 .calendar-tile-sub-gregorian {
-    color: rgba(255, 255, 255, 0.75);
     font-weight: bold;
 }
-
-
 
 .calendar-day {
     padding: 2px 4px !important;
 }
 
 .calendar-event-line {
-    background-color: rgba(255, 255, 255, 0.4);
-    margin: 0 4px;
     border-radius: 2px;
     margin-bottom: 2px;
+    background-color: currentColor;
 }
 
-.jalali-holiday-native-bg {
-    background-color: #ed333b !important;
+.calendar-month-label {
+    font-size: 0.85em;
 }
