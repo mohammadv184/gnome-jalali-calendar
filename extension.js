@@ -300,7 +300,7 @@ function hijackGNOMECalendar(cal) {
             };
             const myHolidays = Events.getEventsForDate(button._date, eventOptions);
             const hasJalaliEvents = myHolidays && myHolidays.length > 0;
-            const hasGregorianEvents = this._eventSource?.hasEvents?.(button._date);
+            const hasGregorianEvents = this._eventSource.hasEvents(button._date);
             
             if (hasJalaliEvents || hasGregorianEvents) {
                 button.add_style_class_name('has-events');
@@ -546,13 +546,13 @@ function injectHolidays(eventsItem) {
     
     if (eventsItem._eventsList) {
         eventsItem._eventsList.visible = true;
-        eventsItem._eventsList.show?.();
-        eventsItem._eventsList.queue_relayout?.();
+        eventsItem._eventsList.show();
+        eventsItem._eventsList.queue_relayout();
     }
     if (eventsItem) {
         eventsItem.visible = true;
-        eventsItem.show?.();
-        eventsItem.queue_relayout?.();
+        eventsItem.show();
+        eventsItem.queue_relayout();
     }
 }
 
