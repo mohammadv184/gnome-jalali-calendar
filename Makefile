@@ -15,7 +15,7 @@ build: clean
 	@echo "Preparing build directory..."
 	rm -rf build_tmp
 	mkdir -p build_tmp
-	cp -r $(FILES) build_tmp/
+	cp --parents -r $(FILES) build_tmp/
 	sed -i 's/@@VERSION@@/$(VERSION)/g' build_tmp/config.js
 	@echo "Packing extension into $(ZIP_FILE)..."
 	cd build_tmp && zip -qr ../$(ZIP_FILE) * -x "schemas/gschemas.compiled"
