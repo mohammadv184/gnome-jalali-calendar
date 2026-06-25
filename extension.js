@@ -17,7 +17,7 @@ function formatMonthTitle(date) {
     const j = Jalaali.toJalaali(date);
     const pName = `${Jalaali.JALALI_MONTH_NAMES[j.jm - 1]} ${Jalaali.toPersianDigits(j.jy)}`;
     
-    const GREGORIAN_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const GREGORIAN_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     let s1Name = settings.get_boolean('show-gregorian-sub') ? `${GREGORIAN_MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}` : '';
     
     const LTR = '\u200E';
@@ -78,7 +78,7 @@ function hijackGNOMECalendar(cal) {
         this['_monthLabel'] = new St.Label({ style_class: 'calendar-month-label', can_focus: true, x_align: Clutter.ActorAlign.FILL, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
         this['_monthLabel'].clutter_text.ellipsize = 3; // Pango.EllipsizeMode.END
         this['_monthLabel'].clutter_text.line_alignment = 1; // Pango.Alignment.CENTER
-        this['_monthLabel'].set_style(styleStr + "font-size: 0.85em; font-stretch: condensed; font-weight: normal; padding: 0; margin: 0;");
+        this['_monthLabel'].set_style(styleStr + 'font-size: 0.85em; font-stretch: condensed; font-weight: normal; padding: 0; margin: 0;');
         topBox.add_child(this['_monthLabel']);
 
         const forwardButton = new St.Button({ style_class: 'calendar-change-month-forward pager-button', icon_name: 'pan-end-symbolic', can_focus: true });
@@ -275,7 +275,7 @@ function hijackGNOMECalendar(cal) {
         let styleStr = `font-family: ${fontStr}Vazirmatn, sans-serif;`;
         
         this._monthLabel.text = formatMonthTitle(targetDate);
-        this._monthLabel.set_style(styleStr + "font-size: 0.85em; font-stretch: condensed; font-weight: normal; padding: 0; margin: 0;");
+        this._monthLabel.set_style(styleStr + 'font-size: 0.85em; font-stretch: condensed; font-weight: normal; padding: 0; margin: 0;');
 
         let targetJ = Jalaali.toJalaali(targetDate);
         if (!this._builtMonth || this._builtMonth !== targetJ.jm || this._builtYear !== targetJ.jy || !this._markedAsToday || this._markedAsToday.getDate() !== now.getDate()) {
@@ -300,7 +300,7 @@ function hijackGNOMECalendar(cal) {
             };
             const myHolidays = Events.getEventsForDate(button._date, eventOptions);
             const hasJalaliEvents = myHolidays && myHolidays.length > 0;
-            const hasGregorianEvents = this._eventSource && typeof this._eventSource.hasEvents === 'function' && this._eventSource.hasEvents(button._date);
+            const hasGregorianEvents = this._eventSource?.hasEvents?.(button._date);
             
             if (hasJalaliEvents || hasGregorianEvents) {
                 button.add_style_class_name('has-events');
@@ -411,70 +411,30 @@ function hijackEventsSection(eventsItem) {
     }
 
     eventsItem._originalReloadEvents = eventsItem._reloadEvents;
-    eventsItem._reloadEvents = function() {
-        let result;
-        try {
-            if (this._originalReloadEvents) result = this._originalReloadEvents();
-        } catch (e) {
-            console.error("JalaliCalendar: Error in original _reloadEvents", e);
+    eventsItem._reloadEvents = async function() {
+        if (this._originalReloadEvents) {
+            await this._originalReloadEvents();
         }
-        
-        if (result && typeof result.then === 'function') {
-            result.then(() => {
-                if (this._isJalaliHijacked) injectHolidays(this);
-            }).catch(e => {
-                console.error("JalaliCalendar: Promise error in _reloadEvents", e);
-                if (this._isJalaliHijacked) injectHolidays(this);
-            });
-        } else {
-            if (this._isJalaliHijacked) injectHolidays(this);
-        }
-        return result;
+        if (this._isJalaliHijacked) injectHolidays(this);
     };
 
     if (eventsItem.reloadEvents) {
         eventsItem._originalPublicReloadEvents = eventsItem.reloadEvents;
-        eventsItem.reloadEvents = function() {
-            let result;
-            try {
-                result = this._originalPublicReloadEvents();
-            } catch (e) {
-                console.error("JalaliCalendar: Error in original reloadEvents", e);
+        eventsItem.reloadEvents = async function() {
+            if (this._originalPublicReloadEvents) {
+                await this._originalPublicReloadEvents();
             }
-            
-            if (result && typeof result.then === 'function') {
-                result.then(() => {
-                    if (this._isJalaliHijacked) injectHolidays(this);
-                }).catch(e => {
-                    if (this._isJalaliHijacked) injectHolidays(this);
-                });
-            } else {
-                if (this._isJalaliHijacked) injectHolidays(this);
-            }
-            return result;
+            if (this._isJalaliHijacked) injectHolidays(this);
         };
     }
 
     if (eventsItem.updateEvents) {
         eventsItem._originalPublicUpdateEvents = eventsItem.updateEvents;
-        eventsItem.updateEvents = function() {
-            let result;
-            try {
-                result = this._originalPublicUpdateEvents();
-            } catch (e) {
-                console.error("JalaliCalendar: Error in original updateEvents", e);
+        eventsItem.updateEvents = async function() {
+            if (this._originalPublicUpdateEvents) {
+                await this._originalPublicUpdateEvents();
             }
-            
-            if (result && typeof result.then === 'function') {
-                result.then(() => {
-                    if (this._isJalaliHijacked) injectHolidays(this);
-                }).catch(e => {
-                    if (this._isJalaliHijacked) injectHolidays(this);
-                });
-            } else {
-                if (this._isJalaliHijacked) injectHolidays(this);
-            }
-            return result;
+            if (this._isJalaliHijacked) injectHolidays(this);
         };
     }
 
@@ -496,107 +456,103 @@ function hijackEventsSection(eventsItem) {
 }
 
 function injectHolidays(eventsItem) {
-    if (!eventsItem || !eventsItem._startDate || !eventsItem._eventsList) return;
+    if (!settings || !eventsItem || !eventsItem._eventsList) return;
     
-    try {
-        const rtlRegex = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-        
-        const children = eventsItem._eventsList.get_children();
-        
-        // Remove existing injected holidays
-        children.forEach(child => {
-            if (child.has_style_class_name('jalali-event-box')) {
-                child.destroy();
-            }
+    const rtlRegex = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    
+    const children = eventsItem._eventsList.get_children();
+    
+    // Remove existing injected holidays
+    children.forEach(child => {
+        if (child.has_style_class_name('jalali-event-box')) {
+            child.destroy();
+        }
+    });
+    
+    const eventOptions = {
+        iranian: settings.get_boolean('show-events-iranian'),
+        hijri: settings.get_boolean('show-events-hijri'),
+        gregorian: settings.get_boolean('show-events-gregorian')
+    };
+    
+    const myHolidays = Events.getEventsForDate(eventsItem._startDate, eventOptions);
+    if (myHolidays.length === 0) return;
+    
+    // Remove the placeholder if there are holidays
+    eventsItem._eventsList.get_children().forEach(child => {
+        if (child.has_style_class_name && child.has_style_class_name('event-placeholder')) {
+            eventsItem._eventsList.remove_child(child);
+        }
+    });
+    
+    const enableCustomColorHoliday = settings.get_boolean('enable-custom-color-holiday');
+    const enableCustomColorDay = settings.get_boolean('enable-custom-color-day');
+    const colorHoliday = settings.get_string('color-holiday') || '#ed333b';
+    const colorDay = settings.get_string('color-day') || '#ffffff';
+    const customFont = settings.get_string('custom-font') || 'Vazirmatn';
+    let fontStr = customFont ? `"${customFont}", ` : '';
+    
+    for (let i = myHolidays.length - 1; i >= 0; i--) {
+        const h = myHolidays[i];
+        const box = new St.BoxLayout({
+            style_class: 'jalali-event-box',
+            orientation: Clutter.Orientation.VERTICAL,
+            x_expand: true,
         });
         
-        const eventOptions = {
-            iranian: settings.get_boolean('show-events-iranian'),
-            hijri: settings.get_boolean('show-events-hijri'),
-            gregorian: settings.get_boolean('show-events-gregorian')
-        };
+        let useColor = false;
+        let eventColor = '';
+        if (enableCustomColorHoliday && h.isHoliday) {
+            useColor = true;
+            eventColor = colorHoliday;
+        } else if (enableCustomColorDay && !h.isHoliday) {
+            useColor = true;
+            eventColor = colorDay;
+        }
         
-        const myHolidays = Events.getEventsForDate(eventsItem._startDate, eventOptions);
-        if (myHolidays.length === 0) return;
+        const isRTL = rtlRegex.test(h.title);
+        const textDir = isRTL ? Clutter.TextDirection.RTL : Clutter.TextDirection.LTR;
+        const alignDir = isRTL ? Clutter.ActorAlign.END : Clutter.ActorAlign.START;
         
-        // Remove the placeholder if there are holidays
-        eventsItem._eventsList.get_children().forEach(child => {
-            if (child.has_style_class_name && child.has_style_class_name('event-placeholder')) {
-                eventsItem._eventsList.remove_child(child);
-            }
-        });
-        
-        const enableCustomColorHoliday = settings.get_boolean('enable-custom-color-holiday');
-        const enableCustomColorDay = settings.get_boolean('enable-custom-color-day');
-        const colorHoliday = settings.get_string('color-holiday') || '#ed333b';
-        const colorDay = settings.get_string('color-day') || '#ffffff';
-        const customFont = settings.get_string('custom-font') || 'Vazirmatn';
-        let fontStr = customFont ? `"${customFont}", ` : '';
-        
-        for (let i = myHolidays.length - 1; i >= 0; i--) {
-            const h = myHolidays[i];
-            const box = new St.BoxLayout({
-                style_class: 'jalali-event-box',
-                orientation: Clutter.Orientation.VERTICAL,
-                x_expand: true,
-            });
-            
-            let useColor = false;
-            let eventColor = '';
-            if (enableCustomColorHoliday && h.isHoliday) {
-                useColor = true;
-                eventColor = colorHoliday;
-            } else if (enableCustomColorDay && !h.isHoliday) {
-                useColor = true;
-                eventColor = colorDay;
-            }
-            
-            const isRTL = rtlRegex.test(h.title);
-            const textDir = isRTL ? Clutter.TextDirection.RTL : Clutter.TextDirection.LTR;
-            const alignDir = isRTL ? Clutter.ActorAlign.END : Clutter.ActorAlign.START;
-            
-            box.set_text_direction(textDir);
+        box.set_text_direction(textDir);
 
-            const titleLabel = new St.Label({
-                text: h.title,
-                style_class: 'event-title',
-                x_expand: true,
-                x_align: alignDir
-            });
-            titleLabel.set_text_direction(textDir);
-            let titleStyle = `font-family: ${fontStr}Vazirmatn, sans-serif; font-weight: bold;`;
-            if (useColor) {
-                titleStyle += ` color: ${eventColor};`;
-            }
-            titleLabel.set_style(titleStyle);
-            box.add_child(titleLabel);
-            
-            const timeLabel = new St.Label({
-                text: h.isHoliday ? "تعطیل رسمی" : "مناسبت",
-                style_class: 'event-time',
-                x_expand: true,
-                x_align: alignDir
-            });
-            timeLabel.set_text_direction(textDir);
-            timeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif;`);
-                timeLabel.add_style_class_name('dim-label');
-            box.add_child(timeLabel);
-            
-            eventsItem._eventsList.insert_child_at_index(box, 0);
+        const titleLabel = new St.Label({
+            text: h.title,
+            style_class: 'event-title',
+            x_expand: true,
+            x_align: alignDir
+        });
+        titleLabel.set_text_direction(textDir);
+        let titleStyle = `font-family: ${fontStr}Vazirmatn, sans-serif; font-weight: bold;`;
+        if (useColor) {
+            titleStyle += ` color: ${eventColor};`;
         }
+        titleLabel.set_style(titleStyle);
+        box.add_child(titleLabel);
         
-        if (eventsItem._eventsList) {
-            eventsItem._eventsList.visible = true;
-            if (typeof eventsItem._eventsList.show === 'function') eventsItem._eventsList.show();
-            if (typeof eventsItem._eventsList.queue_relayout === 'function') eventsItem._eventsList.queue_relayout();
-        }
-        if (eventsItem) {
-            eventsItem.visible = true;
-            if (typeof eventsItem.show === 'function') eventsItem.show();
-            if (typeof eventsItem.queue_relayout === 'function') eventsItem.queue_relayout();
-        }
-    } catch(e) {
-        console.error("JalaliCalendar: Error injecting holidays", e);
+        const timeLabel = new St.Label({
+            text: h.isHoliday ? 'تعطیل رسمی' : 'مناسبت',
+            style_class: 'event-time',
+            x_expand: true,
+            x_align: alignDir
+        });
+        timeLabel.set_text_direction(textDir);
+        timeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif;`);
+            timeLabel.add_style_class_name('dim-label');
+        box.add_child(timeLabel);
+        
+        eventsItem._eventsList.insert_child_at_index(box, 0);
+    }
+    
+    if (eventsItem._eventsList) {
+        eventsItem._eventsList.visible = true;
+        eventsItem._eventsList.show?.();
+        eventsItem._eventsList.queue_relayout?.();
+    }
+    if (eventsItem) {
+        eventsItem.visible = true;
+        eventsItem.show?.();
+        eventsItem.queue_relayout?.();
     }
 }
 

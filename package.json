@@ -2,6 +2,7 @@
   "name": "gnome-jalali-calendar",
   "version": "1.0.0",
   "description": "An elegant and beautiful Jalali (Persian) calendar for GNOME Shell, aligned with GNOME design principles.",
+  "type": "module",
   "main": "events.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@girs/gnome-shell": "^50.0.2"
+    "@girs/gnome-shell": "^50.0.2",
+    "eslint": "^10.5.0",
+    "globals": "^17.7.0"
   }
 }

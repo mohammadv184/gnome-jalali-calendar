@@ -5,7 +5,12 @@ INSTALL_DIR = ~/.local/share/gnome-shell/extensions/$(UUID)
 
 VERSION ?= dev
 
-.PHONY: all build install clean
+.PHONY: all build install clean lint
+
+lint:
+	@echo "Running ESLint..."
+	npx eslint .
+
 
 all: build
 
