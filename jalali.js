@@ -140,7 +140,7 @@ export function toArabicDigits(str) {
 /**
  * Get Hijri (Islamic) date objects.
  */
-const hijriFormatter = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura-nu-latn', {
+const hijriFormatter = new Intl.DateTimeFormat('en-US-u-ca-islamic-tbla-nu-latn', {
     day: 'numeric', month: 'numeric', year: 'numeric'
 });
 
@@ -160,7 +160,7 @@ export function toHijri(date) {
 const hijriStringFormatters = {};
 export function getHijriDate(date, locale = 'fa-IR') {
     if (!hijriStringFormatters[locale]) {
-        hijriStringFormatters[locale] = new Intl.DateTimeFormat(locale + '-u-ca-islamic-umalqura-nu-latn', {
+        hijriStringFormatters[locale] = new Intl.DateTimeFormat(locale + '-u-ca-islamic-tbla-nu-latn', {
             day: 'numeric', month: 'long', year: 'numeric'
         });
     }

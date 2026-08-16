@@ -55,8 +55,17 @@ function hijackGNOMECalendar(cal) {
         this['_buttons'] = [];
         if (this._dates) this._dates = [];
 
-        // Safely unparent children before destroying to prevent lingering C++ references
-        currentChildren.forEach(child => this.remove_child(child));
+        if (!this._nativeWidgets) {
+            this._nativeWidgets = currentChildren;
+        }
+
+        // Safely unparent children. Never destroy native widgets to prevent private field crashes!
+        currentChildren.forEach(child => {
+            this.remove_child(child);
+            if (!this._nativeWidgets.includes(child)) {
+                child.destroy();
+            }
+        });
 
         const topBox = new St.BoxLayout({style_class: 'calendar-month-header'});
         layout.attach(topBox, 0, 0, 7, 1);
@@ -106,7 +115,11 @@ function hijackGNOMECalendar(cal) {
         const children = this.get_children();
         
         for (let i = this._firstDayIndex; i < children.length; i++) {
-            this.remove_child(children[i]);
+            let child = children[i];
+            this.remove_child(child);
+            if (!this._nativeWidgets.includes(child)) {
+                child.destroy();
+            }
         }
 
         this['_buttons'] = [];
@@ -396,7 +409,9 @@ function hijackEventsSection(eventsItem) {
                 };
                 const myHolidays = Events.getEventsForDate(eventsItem._startDate, eventOptions);
                 if (myHolidays && myHolidays.length > 0) {
-                    return; // Block the placeholder!
+                    child.hide();
+                    this._originalAddChild(child);
+                    return;
                 }
             }
             
@@ -475,13 +490,14 @@ function injectHolidays(eventsItem) {
         gregorian: settings.get_boolean('show-events-gregorian')
     };
     
+    
     const myHolidays = Events.getEventsForDate(eventsItem._startDate, eventOptions);
     if (myHolidays.length === 0) return;
     
-    // Remove the placeholder if there are holidays
+    // Hide the placeholder if there are holidays
     eventsItem._eventsList.get_children().forEach(child => {
         if (child.has_style_class_name && child.has_style_class_name('event-placeholder')) {
-            eventsItem._eventsList.remove_child(child);
+            child.hide();
         }
     });
     
