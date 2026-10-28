@@ -203,9 +203,9 @@ function hijackGNOMECalendar(cal) {
             if (hasGreg) gregLabel.text = iter.getDate().toString();
             if (!hasHijri || !hasGreg) pipeLabel.text = '';
 
-            subsBox.add_child(hijriLabel);
-            subsBox.add_child(pipeLabel);
-            subsBox.add_child(gregLabel);
+            if (hasHijri) subsBox.add_child(hijriLabel);
+            if (hasHijri && hasGreg) subsBox.add_child(pipeLabel);
+            if (hasGreg) subsBox.add_child(gregLabel);
             
             tileBox.add_child(subsBox);
             wrapper.add_child(tileBox);
@@ -239,7 +239,7 @@ function hijackGNOMECalendar(cal) {
                 h: hDate 
             });
             const isWeekend = col === 6;
-            const isHoliday = events.some(e => e.isHoliday) || isWeekend;
+            const isHoliday = events.some(e => e.isHoliday);
 
             if (events.length > 0 || isHoliday) {
                 eventLine.opacity = 255;
@@ -254,7 +254,7 @@ function hijackGNOMECalendar(cal) {
                 pipeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
                 gregLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
             } else {
-                if (isHoliday && enableCustomColorHoliday) {
+                if ((isHoliday || isWeekend) && enableCustomColorHoliday) {
                     eventLine.set_style(`background-color: ${colorHoliday};`);
                     mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: ${colorHoliday};`);
                 } else if (enableCustomColorDay) {
@@ -370,7 +370,7 @@ function hijackEventsSection(eventsItem) {
             
             let newText = '';
             if (settings && settings.get_boolean('show-gregorian-sub')) {
-                const gDate = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
+                const gDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
                 newText = `${lrm}${gDate} ${lrm}|${lrm} ${pDate}`;
             } else {
                 newText = pDate;
@@ -592,6 +592,16 @@ function restoreEventsSection(eventsItem) {
     }
 }
 
+function isRTLLocale() {
+    try {
+        const rtlLangs = ['ar', 'fa', 'he', 'ur', 'ps', 'sd', 'ug', 'yi'];
+        const langs = GLib.get_language_names();
+        return langs.some(lang => rtlLangs.some(code => (lang || '').toLowerCase().startsWith(code)));
+    } catch {
+        return false;
+    }
+}
+
 function hijackTodayButton(todayButton) {
     if (!todayButton || todayButton._isJalaliHijacked) return;
     todayButton._isJalaliHijacked = true;
@@ -620,13 +630,24 @@ function hijackTodayButton(todayButton) {
             todayButton._dayPipe.set_style('margin: 0 10px;');
             todayButton._datePipe.set_style('margin: 0 10px;');
 
-            grid.attach(todayButton._dayLabel, 0, 0, 1, 1);
-            grid.attach(todayButton._dayPipe, 1, 0, 1, 1);
-            grid.attach(todayButton._dayJalali, 2, 0, 1, 1);
-            
-            grid.attach(todayButton._dateLabel, 0, 1, 1, 1);
-            grid.attach(todayButton._datePipe, 1, 1, 1, 1);
-            grid.attach(todayButton._dateJalali, 2, 1, 1, 1);
+            const rtl = isRTLLocale();
+            if (rtl) {
+                grid.attach(todayButton._dayJalali, 0, 0, 1, 1);
+                grid.attach(todayButton._dayPipe, 1, 0, 1, 1);
+                grid.attach(todayButton._dayLabel, 2, 0, 1, 1);
+
+                grid.attach(todayButton._dateJalali, 0, 1, 1, 1);
+                grid.attach(todayButton._datePipe, 1, 1, 1, 1);
+                grid.attach(todayButton._dateLabel, 2, 1, 1, 1);
+            } else {
+                grid.attach(todayButton._dayLabel, 0, 0, 1, 1);
+                grid.attach(todayButton._dayPipe, 1, 0, 1, 1);
+                grid.attach(todayButton._dayJalali, 2, 0, 1, 1);
+
+                grid.attach(todayButton._dateLabel, 0, 1, 1, 1);
+                grid.attach(todayButton._datePipe, 1, 1, 1, 1);
+                grid.attach(todayButton._dateJalali, 2, 1, 1, 1);
+            }
             
             vbox.add_child(todayButton._gridWidget);
         }
