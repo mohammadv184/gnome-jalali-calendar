@@ -48,6 +48,17 @@
       <summary>Holiday Color</summary>
       <description>Color for holidays</description>
     </key>
+
+    <key name="enable-custom-color-weekend" type="b">
+      <default>true</default>
+      <summary>Enable Custom Weekend Color</summary>
+      <description>Use custom weekend color</description>
+    </key>
+    <key name="color-weekend" type="s">
+      <default>'#ed333b'</default>
+      <summary>Weekend Color</summary>
+      <description>Color for weekend days</description>
+    </key>
     
     <key name="show-events-iranian" type="b">
       <default>true</default>

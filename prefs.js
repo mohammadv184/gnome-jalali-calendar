@@ -80,7 +80,24 @@ export default class JalaliCalendarPreferences extends ExtensionPreferences {
         holidayColorRow.add_suffix(holToggle);
         holidayColorRow.activatable_widget = holToggle;
         colorsGroup.add(holidayColorRow);
-        
+
+        // Weekend Color
+        const weekendColorRow = new Adw.ActionRow({ title: 'Weekend Color' });
+        const weekendColorBtn = new Gtk.ColorButton({ valign: Gtk.Align.CENTER });
+        const rgbaWeekend = new Gdk.RGBA();
+        rgbaWeekend.parse(settings.get_string('color-weekend') || '#ed333b');
+        weekendColorBtn.set_rgba(rgbaWeekend);
+        weekendColorBtn.connect('color-set', () => {
+            settings.set_string('color-weekend', weekendColorBtn.get_rgba().to_string());
+        });
+        const weekendToggle = new Gtk.Switch({ valign: Gtk.Align.CENTER });
+        settings.bind('enable-custom-color-weekend', weekendToggle, 'active', Gio.SettingsBindFlags.DEFAULT);
+        settings.bind('enable-custom-color-weekend', weekendColorBtn, 'sensitive', Gio.SettingsBindFlags.DEFAULT);
+        weekendColorRow.add_suffix(weekendColorBtn);
+        weekendColorRow.add_suffix(weekendToggle);
+        weekendColorRow.activatable_widget = weekendToggle;
+        colorsGroup.add(weekendColorRow);
+
         appPage.add(colorsGroup);
 
         const datesGroup = new Adw.PreferencesGroup({ title: 'Secondary Dates' });
