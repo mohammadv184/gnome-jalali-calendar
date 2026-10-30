@@ -239,7 +239,7 @@ function hijackGNOMECalendar(cal) {
                 h: hDate 
             });
             const isWeekend = col === 6;
-            const isHoliday = events.some(e => e.isHoliday);
+            const isHoliday = events.some(e => e.isHoliday) || isWeekend;
 
             if (events.length > 0 || isHoliday) {
                 eventLine.opacity = 255;
@@ -254,7 +254,7 @@ function hijackGNOMECalendar(cal) {
                 pipeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
                 gregLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
             } else {
-                if ((isHoliday || isWeekend) && enableCustomColorHoliday) {
+                if (isHoliday && enableCustomColorHoliday) {
                     eventLine.set_style(`background-color: ${colorHoliday};`);
                     mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: ${colorHoliday};`);
                 } else if (enableCustomColorDay) {
@@ -592,16 +592,6 @@ function restoreEventsSection(eventsItem) {
     }
 }
 
-function isRTLLocale() {
-    try {
-        const rtlLangs = ['ar', 'fa', 'he', 'ur', 'ps', 'sd', 'ug', 'yi'];
-        const langs = GLib.get_language_names();
-        return langs.some(lang => rtlLangs.some(code => (lang || '').toLowerCase().startsWith(code)));
-    } catch {
-        return false;
-    }
-}
-
 function hijackTodayButton(todayButton) {
     if (!todayButton || todayButton._isJalaliHijacked) return;
     todayButton._isJalaliHijacked = true;
@@ -630,7 +620,7 @@ function hijackTodayButton(todayButton) {
             todayButton._dayPipe.set_style('margin: 0 10px;');
             todayButton._datePipe.set_style('margin: 0 10px;');
 
-            const rtl = isRTLLocale();
+            const rtl = Clutter.get_default_text_direction() === Clutter.TextDirection.RTL;
             if (rtl) {
                 grid.attach(todayButton._dayJalali, 0, 0, 1, 1);
                 grid.attach(todayButton._dayPipe, 1, 0, 1, 1);
