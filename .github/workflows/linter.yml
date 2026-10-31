@@ -1,0 +1,44 @@
+name: Linter
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: sudo apt-get update && sudo apt-get install -y zip libglib2.0-dev libglib2.0-bin
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Install Shexli
+        run: pip install shexli
+
+      - name: Run ESLint
+        run: make lint
+
+      - name: Build Extension Package
+        run: make build
+
+      - name: Run Shexli
+        run: shexli jalali-calendar@mohammad-abbasi.me.zip

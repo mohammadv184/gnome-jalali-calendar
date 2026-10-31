@@ -7,10 +7,6 @@ VERSION ?= dev
 
 .PHONY: all build install clean lint
 
-lint:
-	@echo "Running ESLint..."
-	npx eslint .
-
 
 all: build
 
@@ -39,3 +35,7 @@ clean:
 	rm -f $(ZIP_FILE)
 	rm -f schemas/gschemas.compiled
 	rm -rf build_tmp
+
+lint:
+	@echo "Running ESLint..."
+	npx eslint .

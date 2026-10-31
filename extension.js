@@ -351,7 +351,6 @@ function hijackEventsSection(eventsItem) {
     if (!eventsItem || eventsItem._isJalaliHijacked) return;
     eventsItem._isJalaliHijacked = true;
 
-    eventsItem._originalReloadEvents = eventsItem._reloadEvents;
     eventsItem._originalSetDate = eventsItem.setDate;
     eventsItem._originalUpdateTitle = eventsItem._updateTitle;
 
@@ -377,9 +376,8 @@ function hijackEventsSection(eventsItem) {
             }
             
             if (settings && settings.get_boolean('show-hijri')) {
-                const hDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab', {
-                    day: 'numeric', month: 'long'
-                }).format(date);
+                const hj = Jalaali.toHijri(date);
+                const hDate = `${Jalaali.toArabicDigits(hj.jd)} ${Jalaali.HIJRI_MONTH_NAMES[hj.jm - 1]}`;
                 newText += ` ${lrm}|${lrm} ${rle}${hDate}${pdf}`;
             }
             
@@ -490,6 +488,7 @@ function injectHolidays(eventsItem) {
         gregorian: settings.get_boolean('show-events-gregorian')
     };
     
+    if (!eventsItem._startDate) return;
     
     const myHolidays = Events.getEventsForDate(eventsItem._startDate, eventOptions);
     if (myHolidays.length === 0) return;
@@ -582,11 +581,21 @@ function restoreEventsSection(eventsItem) {
     }
     
     eventsItem._reloadEvents = eventsItem._originalReloadEvents;
-    
+    if (eventsItem._originalPublicReloadEvents) {
+        eventsItem.reloadEvents = eventsItem._originalPublicReloadEvents;
+    }
+    if (eventsItem._originalPublicUpdateEvents) {
+        eventsItem.updateEvents = eventsItem._originalPublicUpdateEvents;
+    }
+    if (eventsItem._originalSync) {
+        eventsItem._sync = eventsItem._originalSync;
+    }
+    if (eventsItem._originalPublicSync) {
+        eventsItem.sync = eventsItem._originalPublicSync;
+    }
     if (eventsItem._originalSetDate) {
         eventsItem.setDate = eventsItem._originalSetDate;
     }
-    
     if (eventsItem._originalUpdateTitle) {
         eventsItem._updateTitle = eventsItem._originalUpdateTitle;
     }
@@ -821,6 +830,7 @@ export default class JalaliCalendarExtension extends Extension {
         if (this._dateMenu && this._dateMenu._clockDisplay) {
             this._dateMenu._clockDisplay.remove_style_class_name('jalali-clock-display');
             this._dateMenu._clockDisplay.disconnectObject(this);
+            delete this._dateMenu._clockDisplay._dateMenu;
             // Restore original text
             if (this._dateMenu._clock) {
                 this._dateMenu._clockDisplay.text = this._dateMenu._clock.clock;
