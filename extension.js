@@ -185,31 +185,35 @@ function hijackGNOMECalendar(cal) {
             mainLabel.set_style(styleStr);
             tileBox.add_child(mainLabel);
 
-            const subsBox = new St.BoxLayout({ style_class: 'calendar-tile-subs', x_expand: true });
-            
-            const subStyleStr = `${styleStr} color: #d3d3d3;`;
-            
-            const hijriLabel = new St.Label({ text: '', style_class: 'calendar-tile-sub-hijri', x_align: Clutter.ActorAlign.START, x_expand: true });
+            const hasHijri = settings.get_boolean('show-hijri');
+            const hasGreg = settings.get_boolean('show-gregorian-sub');
+            const bothSubs = hasHijri && hasGreg;
+            const subsBox = new St.BoxLayout({ style_class: 'calendar-tile-subs', x_align: bothSubs ? Clutter.ActorAlign.FILL : Clutter.ActorAlign.CENTER });
+            const subStyleStr = styleStr;
+
+            const hijriLabel = new St.Label({ text: '', style_class: 'calendar-tile-sub-hijri', x_align: Clutter.ActorAlign.START, x_expand: bothSubs });
             hijriLabel.set_style(subStyleStr);
             
             const pipeLabel = new St.Label({ text: ' | ', style_class: 'calendar-tile-sub-pipe', x_align: Clutter.ActorAlign.CENTER, x_expand: true });
             pipeLabel.set_style(subStyleStr);
             
-            const gregLabel = new St.Label({ text: '', style_class: 'calendar-tile-sub-gregorian', x_align: Clutter.ActorAlign.END, x_expand: true });
+            const gregLabel = new St.Label({ text: '', style_class: 'calendar-tile-sub-gregorian', x_align: Clutter.ActorAlign.END, x_expand: bothSubs });
             gregLabel.set_style(subStyleStr);
-            
-            let hasHijri = settings.get_boolean('show-hijri');
-            let hasGreg = settings.get_boolean('show-gregorian-sub');
             
             if (hasHijri) hijriLabel.text = Jalaali.toArabicDigits(hDate.jd);
             if (hasGreg) gregLabel.text = iter.getDate().toString();
-            if (!hasHijri || !hasGreg) pipeLabel.text = '';
 
-            subsBox.add_child(hijriLabel);
-            subsBox.add_child(pipeLabel);
-            subsBox.add_child(gregLabel);
-            
-            tileBox.add_child(subsBox);
+            if (bothSubs) {
+                subsBox.add_child(hijriLabel);
+                subsBox.add_child(pipeLabel);
+                subsBox.add_child(gregLabel);
+                tileBox.add_child(subsBox);
+            } else if (hasHijri || hasGreg) {
+                const singleLabel = hasHijri ? hijriLabel : gregLabel;
+                singleLabel.x_align = Clutter.ActorAlign.CENTER;
+                singleLabel.add_style_class_name('calendar-tile-subs');
+                tileBox.add_child(singleLabel);
+            }
             wrapper.add_child(tileBox);
 
             const eventLine = new St.Widget({ height: 2, width: 18, style_class: 'calendar-event-line', x_expand: false, x_align: Clutter.ActorAlign.CENTER });
@@ -252,9 +256,9 @@ function hijackGNOMECalendar(cal) {
             if (isToday && enableCustomColorToday) {
                 _calBtn.set_style(`background-color: ${colorToday}; border-radius: 999px;`);
                 mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: white;`);
-                hijriLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
-                pipeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
-                gregLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: rgba(255,255,255,0.7);`);
+                hijriLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: white;`);
+                pipeLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: white;`);
+                gregLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: white;`);
             } else {
                 if (isHoliday && enableCustomColorHoliday) {
                     eventLine.set_style(`background-color: ${colorHoliday};`);
@@ -373,7 +377,7 @@ function hijackEventsSection(eventsItem) {
             
             let newText = '';
             if (settings && settings.get_boolean('show-gregorian-sub')) {
-                const gDate = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
+                const gDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
                 newText = `${lrm}${gDate} ${lrm}|${lrm} ${pDate}`;
             } else {
                 newText = pDate;
@@ -633,13 +637,24 @@ function hijackTodayButton(todayButton) {
             todayButton._dayPipe.set_style('margin: 0 10px;');
             todayButton._datePipe.set_style('margin: 0 10px;');
 
-            grid.attach(todayButton._dayLabel, 0, 0, 1, 1);
-            grid.attach(todayButton._dayPipe, 1, 0, 1, 1);
-            grid.attach(todayButton._dayJalali, 2, 0, 1, 1);
-            
-            grid.attach(todayButton._dateLabel, 0, 1, 1, 1);
-            grid.attach(todayButton._datePipe, 1, 1, 1, 1);
-            grid.attach(todayButton._dateJalali, 2, 1, 1, 1);
+            const rtl = Clutter.get_default_text_direction() === Clutter.TextDirection.RTL;
+            if (rtl) {
+                grid.attach(todayButton._dayJalali, 0, 0, 1, 1);
+                grid.attach(todayButton._dayPipe, 1, 0, 1, 1);
+                grid.attach(todayButton._dayLabel, 2, 0, 1, 1);
+
+                grid.attach(todayButton._dateJalali, 0, 1, 1, 1);
+                grid.attach(todayButton._datePipe, 1, 1, 1, 1);
+                grid.attach(todayButton._dateLabel, 2, 1, 1, 1);
+            } else {
+                grid.attach(todayButton._dayLabel, 0, 0, 1, 1);
+                grid.attach(todayButton._dayPipe, 1, 0, 1, 1);
+                grid.attach(todayButton._dayJalali, 2, 0, 1, 1);
+
+                grid.attach(todayButton._dateLabel, 0, 1, 1, 1);
+                grid.attach(todayButton._datePipe, 1, 1, 1, 1);
+                grid.attach(todayButton._dateJalali, 2, 1, 1, 1);
+            }
             
             vbox.add_child(todayButton._gridWidget);
         }
