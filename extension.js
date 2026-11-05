@@ -147,10 +147,12 @@ function hijackGNOMECalendar(cal) {
         const customFont = settings.get_string('custom-font') || 'Vazirmatn';
         const colorToday = settings.get_string('color-today') || '#3584e4';
         const colorHoliday = settings.get_string('color-holiday') || '#ed333b';
+        const colorWeekend = settings.get_string('color-weekend') || '#ed333b';
         const colorDay = settings.get_string('color-day') || '#ffffff';
         
         const enableCustomColorToday = settings.get_boolean('enable-custom-color-today');
         const enableCustomColorHoliday = settings.get_boolean('enable-custom-color-holiday');
+        const enableCustomColorWeekend = settings.get_boolean('enable-custom-color-weekend');
         const enableCustomColorDay = settings.get_boolean('enable-custom-color-day');
         const eventOptions = {
             iranian: settings.get_boolean('show-events-iranian'),
@@ -239,7 +241,7 @@ function hijackGNOMECalendar(cal) {
                 h: hDate 
             });
             const isWeekend = col === 6;
-            const isHoliday = events.some(e => e.isHoliday) || isWeekend;
+            const isHoliday = events.some(e => e.isHoliday);
 
             if (events.length > 0 || isHoliday) {
                 eventLine.opacity = 255;
@@ -257,6 +259,8 @@ function hijackGNOMECalendar(cal) {
                 if (isHoliday && enableCustomColorHoliday) {
                     eventLine.set_style(`background-color: ${colorHoliday};`);
                     mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: ${colorHoliday};`);
+                } else if (isWeekend && enableCustomColorWeekend) {
+                    mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: ${colorWeekend};`);
                 } else if (enableCustomColorDay) {
                     mainLabel.set_style(`font-family: ${fontStr}Vazirmatn, sans-serif; color: ${colorDay};`);
                 }
